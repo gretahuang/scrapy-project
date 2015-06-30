@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+
+import os
+import shutil
+from time import gmtime, strftime
+import logging
+
+from os.path import expanduser
+
+import deduper
+import subprocess
+import sys
+
+# sys.stdout = os.devnull
+# sys.stderr = os.devnull
+
+# Open file of scraping sources (ex. MIT, Stanford)
+home = expanduser("~")
+f = open(home + "/project/sources.txt", "r")
+lines = f.readlines()
+
+# For each source, run scraping script
+for line in lines:
+	try:	
+		source = line.strip()
+
+		# Create file name and new directory based on current time-stamp
+		file_name =  source + "_" + strftime("%Y-%m-%d_%H.%M.%S", gmtime())
+
+		new_directory = home + "/project/log/" + file_name
+		os.mkdir(new_directory)
+
+		# Create new logger
+		logger = logging.getLogger(source)
+
+		# Set log file
+		log_name = home + "/project/log/" + file_name + "/" + "log_file.txt"
+		hdlr = logging.FileHandler(log_name)
+		formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+		hdlr.setFormatter(formatter)
+		logger.addHandler(hdlr) 
+		logger.setLevel(logging.DEBUG)
+
+		# Go to source directory
+		source_directory = home + "/project/" + source
+		os.chdir(source_directory)
+
+		# Execute scrapy command
+		scrapy_command = ["scrapy", "crawl", source, "-o", file_name + ".csv", "-t", "csv"]
+
+		with open(os.devnull, "w") as fnull:
+		    result = subprocess.call(scrapy_command, stdout = fnull, stderr = fnull)
+
+		# Move data scrape .csv file from source directory to log directory
+		orig = source_directory + "/" + file_name + ".csv"
+		dest = new_directory + "/" + file_name + ".csv"
+		shutil.move(orig, dest)
+
+		#Merge master file with new data scrape .csv file
+		os.chdir("..")
+		deduper.runProgram(dest)
+		os.remove("master.csv")
+		shutil.move("temp.csv", "master.csv")
+
+	except IOError, error:
+		logger.critical("Folder did not exist; scraped data was not merged with master since it was not collected.\n" + str(error))
+	else:
+		logger.info("Scrape was successful.")

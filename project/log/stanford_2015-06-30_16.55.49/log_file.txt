@@ -1,0 +1,1 @@
+2015-06-30 12:56:10,800 INFO Scrape was successful.

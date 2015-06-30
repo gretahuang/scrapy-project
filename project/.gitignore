@@ -1,0 +1,16 @@
+*.hgrc
+*.DS_Store
+__pycache__/
+*.py[cod]
+.python2/
+MANIFEST
+nameparser.egg-info/
+dummycert.pem
+build
+*.egg
+.env
+.env3
+.coverage
+
+# docs
+docs/_*
